@@ -2,32 +2,65 @@
 
 ## Prerequisites
 
-* A linux 64-bits architecture (i.e. `linux-64` platform in `mamba info`).
-* A NVIDIA GPU with at least 32 Gb of VRAM.
+* A linux 64-bits architecture.
+* A NVIDIA GPU with at least 32 Gb of VRAM; the code runs across multiple GPU architectures, including Blackwell.
 
 ## 1. Setup Python Environment
 
-The following will install the default environment. If you use `conda` instead of `mamba`, replace its name in the first two lines. Note that you may have to build the environment on a compute node with GPU (e.g., you may get a `RuntimeError: Not compiled with GPU support` error when running certain parts of the code that use Pytorch3D).
+`uv` is now the default way to create the environment. The additional NVIDIA/PyTorch indices and Kaolin find-links are configured in `pyproject.toml`, so no extra exports are needed. Use Python 3.11 (the project targets 3.11 only). **CUDA toolkit 12.9 is required for building gsplat/pytorch3d.**
+
+### Quick start (recommended)
+
+The repo ships with a [`justfile`](../justfile) that handles CUDA download, toolkit install, uv/Python 3.11 setup, `uv sync`, and the hydra patch end-to-end:
 
 ```bash
-# create sam3d-objects environment
-mamba env create -f environments/default.yml
-mamba activate sam3d-objects
+# install just if needed: https://just.systems/man/en/installation.html
+just setup                # idempotent: CUDA 12.9 toolkit + venv + deps + hydra patch. Safe to re-run.
+# or run the individual steps:
+just install-cuda         # download + install CUDA 12.9 toolkit (defaults to /usr/local/cuda-12.9)
+just sync                 # uv venv + `uv sync --extra dev --extra p3d --extra inference`
+just patch-hydra          # apply https://github.com/facebookresearch/hydra/pull/2863
+```
 
-# for pytorch/cuda dependencies
-export PIP_EXTRA_INDEX_URL="https://pypi.ngc.nvidia.com https://download.pytorch.org/whl/cu121"
+Override the toolkit install path with e.g. `just cuda_home=$HOME/cuda-12.9 install-cuda` if you don't have sudo.
 
-# install sam3d-objects and core dependencies
-pip install -e '.[dev]'
-pip install -e '.[p3d]' # pytorch3d dependency on pytorch is broken, this 2-step approach solves it
+Once CUDA is installed, add these to your shell rc so future shells pick up the toolkit:
 
-# for inference
-export PIP_FIND_LINKS="https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu121.html"
-pip install -e '.[inference]'
+```bash
+export CUDA_HOME=/usr/local/cuda-12.9
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+```
+
+### Manual workflow
+
+If you prefer to drive `uv` yourself (CUDA 12.9 must already be on the box and the env vars above exported):
+
+```bash
+# install uv if you don't have it yet
+pip install uv
+
+# create and activate a local virtualenv
+uv python install 3.11
+uv venv .venv
+source .venv/bin/activate
+
+# install the base set of pinned dependencies
+uv sync
+# useful flags
+# uv sync --preview-features extra-build-dependencies  # silence warnings for git-based deps needing torch at build time
+
+# optional extras
+uv sync --extra dev       # developer tooling
+uv sync --extra p3d       # pytorch3d + flash_attn
+uv sync --extra inference # kaolin/gsplat/gradio extras
+# for demo/inference runs, you typically want both p3d and inference extras installed
 
 # patch things that aren't yet in official pip packages
 ./patching/hydra # https://github.com/facebookresearch/hydra/pull/2863
 ```
+
+> If you still prefer a Conda-based workflow for GPU toolchains, you can reuse `environments/default.yml` to provision system libraries, then activate your environment and run `uv sync` inside it to install Python dependencies.
 
 ## 2. Getting Checkpoints
 
@@ -54,5 +87,3 @@ hf download \
 mv checkpoints/${TAG}-download/checkpoints checkpoints/${TAG}
 rm -rf checkpoints/${TAG}-download
 ```
-
-
