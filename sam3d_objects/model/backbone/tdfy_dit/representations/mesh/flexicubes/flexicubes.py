@@ -15,7 +15,17 @@
 # limitations under the License.
 import torch
 from .tables import *
-from kaolin.utils.testing import check_tensor
+def check_tensor(tensor, shape, throw=False):
+    if tensor.ndim != len(shape):
+        if throw:
+            raise ValueError(f"expected ndim={len(shape)}, got {tensor.ndim}")
+        return False
+    for expected, actual in zip(shape, tensor.shape):
+        if expected is not None and expected != actual:
+            if throw:
+                raise ValueError(f"expected shape {shape}, got {tuple(tensor.shape)}")
+            return False
+    return True
 
 __all__ = [
     'FlexiCubes'
