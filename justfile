@@ -115,7 +115,35 @@ patch-hydra:
     fi
     ./patching/hydra
 
-# Idempotent end-to-end setup: CUDA toolkit → venv + deps → hydra patch. Re-run freely.
-setup: install-cuda sync patch-hydra
+# Download SAM 3D Objects checkpoints from HuggingFace into checkpoints/hf.
+# Requires `hf auth login` (access to facebook/sam-3d-objects must be granted first).
+download-checkpoints:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TAG=hf
+    if [ -f "checkpoints/${TAG}/pipeline.yaml" ]; then
+        echo "Checkpoints already present at checkpoints/${TAG}. Skipping."
+        exit 0
+    fi
+    if [ -f .venv/bin/activate ]; then
+        # shellcheck disable=SC1091
+        source .venv/bin/activate
+    fi
+    uv pip install 'huggingface-hub[cli]<1.0'
+    if ! hf auth whoami >/dev/null 2>&1; then
+        echo "ERROR: not authenticated to HuggingFace. Run 'hf auth login' first." >&2
+        echo "You must also have access granted on https://huggingface.co/facebook/sam-3d-objects" >&2
+        exit 1
+    fi
+    hf download \
+        --repo-type model \
+        --local-dir "checkpoints/${TAG}-download" \
+        --max-workers 1 \
+        facebook/sam-3d-objects
+    mv "checkpoints/${TAG}-download/checkpoints" "checkpoints/${TAG}"
+    rm -rf "checkpoints/${TAG}-download"
+
+# Idempotent end-to-end setup: CUDA toolkit → venv + deps → hydra patch → checkpoints. Re-run freely.
+setup: install-cuda sync patch-hydra download-checkpoints
 
 alias bootstrap := setup
