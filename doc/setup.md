@@ -7,7 +7,7 @@
 
 ## 1. Setup Python Environment
 
-`uv` is now the default way to create the environment. The additional NVIDIA/PyTorch indices and Kaolin find-links are configured in `pyproject.toml`, so no extra exports are needed. Use Python 3.11 (the project targets 3.11 only). **CUDA toolkit 12.9 is required for building gsplat/pytorch3d.**
+`uv` is now the default way to create the environment. The additional NVIDIA/PyTorch indices are configured in `pyproject.toml`, so no extra exports are needed. Use Python 3.11 (the project targets 3.11 only). **CUDA toolkit 12.9 is required for building gsplat/pytorch3d/flash-attn.**
 
 ### Quick start (recommended)
 
@@ -18,7 +18,7 @@ The repo ships with a [`justfile`](../justfile) that handles CUDA download, tool
 just setup                # idempotent: CUDA 12.9 toolkit + venv + deps + hydra patch. Safe to re-run.
 # or run the individual steps:
 just install-cuda         # download + install CUDA 12.9 toolkit (defaults to /usr/local/cuda-12.9)
-just sync                 # uv venv + `uv sync --extra dev --extra p3d --extra inference`
+just sync                 # uv venv + `uv sync --extra inference`
 just patch-hydra          # apply https://github.com/facebookresearch/hydra/pull/2863
 ```
 
@@ -45,16 +45,11 @@ uv python install 3.11
 uv venv .venv
 source .venv/bin/activate
 
-# install the base set of pinned dependencies
-uv sync
-# useful flags
-# uv sync --preview-features extra-build-dependencies  # silence warnings for git-based deps needing torch at build time
+# install the base set of dependencies
+uv sync --preview-features extra-build-dependencies
 
-# optional extras
-uv sync --extra dev       # developer tooling
-uv sync --extra p3d       # pytorch3d + flash_attn
-uv sync --extra inference # kaolin/gsplat/gradio extras
-# for demo/inference runs, you typically want both p3d and inference extras installed
+# optional extras (needed for the demo notebooks)
+uv sync --extra inference --preview-features extra-build-dependencies  # gsplat, pytorch3d, flash-attn, gradio, seaborn
 
 # patch things that aren't yet in official pip packages
 ./patching/hydra # https://github.com/facebookresearch/hydra/pull/2863

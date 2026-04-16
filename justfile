@@ -99,7 +99,7 @@ sync:
         echo ".venv already exists — reusing (delete it to force recreation)"
     fi
     uv sync \
-        --extra dev --extra p3d --extra inference \
+        --extra inference \
         --preview-features extra-build-dependencies
 
     echo

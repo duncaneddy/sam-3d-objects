@@ -73,10 +73,10 @@ dependencies = [
   "smplx",
   "spconv-cu121",
   "tensorboard",
-  "torch",
+  "torch>=2.8,<2.9",
   "timm",
   "tomli",
-  "torchaudio",
+  "torchaudio>=2.8,<2.9",
   "uri-template",
   "wandb",
   "webcolors",
@@ -102,3 +102,16 @@ packages = ["sam3d_objects"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv]
+extra-index-url = [
+  "https://pypi.ngc.nvidia.com",
+  "https://download.pytorch.org/whl/cu129",
+]
+index-strategy = "unsafe-best-match"
+
+[tool.uv.extra-build-dependencies]
+flash-attn = ["torch"]
+gsplat = ["torch"]
+nvidia-pyindex = ["pip"]
+pytorch3d = ["torch", "numpy"]
