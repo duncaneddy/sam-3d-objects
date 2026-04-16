@@ -12,7 +12,6 @@ if not _cuda_home:
     _cuda_home = _torch_cuda_home
 if _cuda_home:
     os.environ["CUDA_HOME"] = _cuda_home
-os.environ["LIDRA_SKIP_INIT"] = "true"
 
 import sys
 from typing import Union, Optional, List, Callable
